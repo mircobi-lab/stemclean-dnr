@@ -1,0 +1,17 @@
+[workspace]
+resolver = "2"
+members = ["crates/stemclean-core", "crates/stemclean-wasm", "crates/stemclean-cli"]
+# L'app Mac (Tauri) ha un suo Cargo.toml in src-tauri/ e si compila a parte.
+exclude = ["src-tauri"]
+
+[workspace.package]
+version = "2.0.0"
+edition = "2024"
+license = "MIT"
+authors = ["Mirco Baiocco — MBStudio91"]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"

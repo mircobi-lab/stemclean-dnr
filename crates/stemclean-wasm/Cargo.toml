@@ -1,0 +1,13 @@
+[package]
+name = "stemclean-wasm"
+description = "StemClean DNR compilato in WebAssembly per la pagina web e l'app Mac"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+stemclean-core = { path = "../stemclean-core" }

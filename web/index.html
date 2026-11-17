@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StemClean DNR — pulizia dei rientri negli stem</title>
+<style>
+:root{--bg:#0f0d0b;--panel:#1a1714;--line:#2e2924;--text:#efe7dc;--mute:#a3988a;--acc:#ffb000;--acc2:#ff6a45}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:26px 18px 70px}
+header h1{font-size:28px;margin:0 0 4px;letter-spacing:.4px}
+header h1 span{color:var(--acc)}
+header h1 small.rust{font-size:12px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--mute);border:1px solid var(--line);border-radius:999px;padding:3px 9px;vertical-align:middle;margin-left:8px}
+header h1 small.rust.err{color:#ff5a4a;border-color:#ff5a4a}
+header p{margin:0;color:var(--mute);max-width:72ch}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-top:18px}
+.panel h2{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--mute);margin:0 0 12px;font-weight:600}
+.drops{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:720px){.drops{grid-template-columns:1fr}}
+.drop{display:block;border:1.5px dashed #4a4239;border-radius:10px;padding:16px;min-height:118px;cursor:pointer;transition:border-color .15s,background-color .15s}
+.drop:hover,.drop.over{border-color:var(--acc);background:#211c16}
+.drop b{display:block;font-size:15px;margin-bottom:2px}
+.drop small{color:var(--mute)}
+.drop input{display:none}
+.files{margin-top:8px;font-size:13px;color:var(--acc);word-break:break-all}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+button{font:inherit;color:var(--text);background:#2a241e;border:1px solid #3d352d;border-radius:8px;padding:8px 14px;cursor:pointer;transition:border-color .15s,background-color .15s,transform .1s}
+button:hover{border-color:var(--acc)}
+button:active{transform:scale(.97)}
+button.on{background:var(--acc);color:#1a1300;border-color:var(--acc);font-weight:600}
+button.primary{background:var(--acc);color:#1a1300;border-color:var(--acc);font-weight:700;padding:10px 22px}
+button:disabled{opacity:.4;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px 24px}
+.sub{grid-column:1/-1;font-size:12px;color:var(--acc);text-transform:uppercase;letter-spacing:.1em;margin-top:4px}
+label.ctl{display:block;font-size:13px;color:var(--mute)}
+label.ctl output{float:right;color:var(--text);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--acc)}
+select{font:inherit;color:var(--text);border:1px solid #3d352d;border-radius:8px;padding:6px 30px 6px 8px;color-scheme:dark;-webkit-appearance:none;appearance:none;background:#2a241e url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23a3988a'/%3E%3C/svg%3E") no-repeat right 10px center}
+select option{background:#2a241e;color:#efe7dc}
+.row{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center}
+.prog{height:6px;background:#2a241e;border-radius:3px;overflow:hidden;flex:1;min-width:160px}
+.prog i{display:block;height:100%;width:0;background:var(--acc)}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:14px}
+.m{background:#14110e;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.m span{display:block;font-size:12px;color:var(--mute)}
+.m b{font-size:20px;font-variant-numeric:tabular-nums}
+.heat{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--line);cursor:pointer;background:#14110e}
+.heat canvas{display:block;width:100%;height:320px}
+@media(max-width:720px){.heat canvas{height:240px}}
+.ph{position:absolute;width:2px;background:#fff;left:0;pointer-events:none;opacity:.85}
+.chx,.chy{position:absolute;pointer-events:none;background:rgba(255,255,255,.55);display:none}
+.chx{width:1px}.chy{height:1px}
+.readout{font-variant-numeric:tabular-nums;font-size:13px;color:var(--text);min-height:20px}
+.legend{font-size:12px;color:var(--mute);margin:4px 0 14px}
+.ab button[data-src]{min-width:118px}
+.time{font-variant-numeric:tabular-nums;color:var(--mute);font-size:13px}
+.hint{font-size:13px;color:var(--mute)}
+.warn{color:var(--acc2)}
+kbd{background:#2a241e;border:1px solid #3d352d;border-radius:4px;padding:0 5px;font-size:12px;color:var(--text)}
+details{color:var(--mute);font-size:14px}
+details summary{cursor:pointer;color:var(--text)}
+details p{max-width:78ch}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#2a241e;border:1px solid var(--acc);padding:10px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+#toast.show{opacity:1}
+.hidden{display:none!important}
+footer{margin-top:28px;color:var(--mute);font-size:12px}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>StemClean <span>DNR</span> <small class="rust" id="engineTag">motore Rust</small></h1>
+  <p>Toglie dagli stem separati il rientro degli altri strumenti. Il motore è un espansore a 27 bande (1/3 d'ottava), cioè la metà "decodifica" di un sistema tipo Dolby/DNR, pilotato dagli stem di riferimento. Tutto gira sul tuo computer, con un motore scritto in Rust: i file non vengono inviati da nessuna parte.</p>
+</header>
+
+<section class="panel">
+  <h2>1 · File</h2>
+  <div class="drops">
+    <label class="drop" id="dropT">
+      <input type="file" id="fileT" accept="audio/*,.wav,.mp3,.flac,.m4a,.aif,.aiff,.ogg">
+      <b>Stem da pulire</b>
+      <small>Per esempio il cantato (vocals). WAV, MP3, FLAC, AIFF…</small>
+      <div class="files" id="namesT"></div>
+    </label>
+    <label class="drop" id="dropR">
+      <input type="file" id="fileR" multiple accept="audio/*,.wav,.mp3,.flac,.m4a,.aif,.aiff,.ogg">
+      <b>Stem di riferimento: ciò che non deve esserci</b>
+      <small>Per esempio "other", oppure drums + bass + other + piano + guitar insieme: vengono sommati. Senza riferimento si usa solo l'espansore.</small>
+      <div class="files" id="namesR"></div>
+    </label>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <span class="hint">Frequenza di lavoro</span>
+    <select id="sr"><option value="44100">44,1 kHz</option><option value="48000">48 kHz</option></select>
+    <span class="hint">Scegli quella dei tuoi file: il browser converte tutto a questa frequenza.</span>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>2 · Regolazioni</h2>
+  <div class="presets" id="presets">
+    <button data-p="delicato">Delicato</button>
+    <button data-p="consigliato" class="on">Consigliato</button>
+    <button data-p="estremo">Estremo</button>
+    <button data-p="dnr">Solo espansore (stile Dolby/DNR)</button>
+  </div>
+  <div class="row" style="margin-bottom:12px">
+    <span class="hint">Modalità</span>
+    <select id="mode">
+      <option value="sc">Sidechain dai riferimenti</option>
+      <option value="exp">Solo espansore</option>
+      <option value="both">Combinata</option>
+    </select>
+  </div>
+  <div class="grid">
+    <div class="sub">Sidechain</div>
+    <label class="ctl" title="Attenua quando lo stem supera il riferimento di meno di questo valore. Più alto = più deciso.">Margine sul riferimento <output id="o_margin"></output><input type="range" id="margin" min="-12" max="18" step="1"></label>
+    <label class="ctl" title="Quanto velocemente scende il guadagno sotto il margine">Pendenza <output id="o_slope"></output><input type="range" id="slope" min="0.5" max="3" step="0.1"></label>
+    <div class="sub">Espansore</div>
+    <label class="ctl" title="Soglia sopra il rumore di fondo stimato di ogni banda">Soglia sopra il fondo <output id="o_thr"></output><input type="range" id="thr" min="3" max="24" step="1"></label>
+    <label class="ctl" title="1:2 come la decodifica Dolby">Rapporto <output id="o_ratio"></output><input type="range" id="ratio" min="1.2" max="4" step="0.1"></label>
+    <div class="sub">Comune</div>
+    <label class="ctl">Profondità massima <output id="o_cut"></output><input type="range" id="cut" min="6" max="48" step="1"></label>
+    <label class="ctl">Attacco <output id="o_att"></output><input type="range" id="att" min="1" max="50" step="1"></label>
+    <label class="ctl">Rilascio <output id="o_rel"></output><input type="range" id="rel" min="20" max="400" step="5"></label>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>3 · Elabora</h2>
+  <div class="row">
+    <button class="primary" id="go" disabled>Elabora</button>
+    <div class="prog"><i id="bar"></i></div>
+    <span class="hint" id="status">Carica lo stem da pulire.</span>
+  </div>
+</section>
+
+<section class="panel hidden" id="results">
+  <h2>4 · Ascolto e confronto</h2>
+  <div class="metrics">
+    <div class="m"><span>Energia tolta (sul totale)</span><b id="m1">–</b></div>
+    <div class="m"><span>Perdita media sul canto forte</span><b id="m2">–</b></div>
+    <div class="m"><span>Perdita nell'1% peggiore</span><b id="m3">–</b></div>
+  </div>
+  <div class="row" style="margin-bottom:8px">
+    <span class="hint">Vista</span>
+    <select id="view"><option value="spec">Spettrogramma (sorgente in ascolto)</option><option value="red">Riduzione applicata</option></select>
+    <span class="hint" id="rangeWrap">Gamma <select id="range"><option value="120">120 dB</option><option value="90" selected>90 dB</option><option value="60">60 dB</option></select></span>
+  </div>
+  <div class="heat" id="heat"><canvas id="cv"></canvas><div class="ph" id="ph"></div><div class="chx" id="chx"></div><div class="chy" id="chy"></div></div>
+  <div class="readout" id="readout">Passa il mouse sul grafico per leggere tempo, frequenza e livello. Clic per spostare la riproduzione.</div>
+  <div class="legend" id="legend"></div>
+  <div class="row ab">
+    <button id="play" class="primary">▶ Play</button>
+    <button data-src="orig">1 · Originale</button>
+    <button data-src="clean" class="on">2 · Pulito</button>
+    <button data-src="rem">3 · Solo tolto</button>
+    <label class="hint"><input type="checkbox" id="loop"> loop</label>
+    <span class="time" id="time">0:00 / 0:00</span>
+  </div>
+  <p class="hint">Tasti: <kbd>spazio</kbd> play/pausa · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> cambiano ascolto senza perdere la posizione · clic sulla mappa per spostarti. Ascolta "Solo tolto": se senti solo base e nessuna sillaba, le regolazioni vanno bene. Se senti pezzi di voce, abbassa il margine.</p>
+  <div class="row" style="margin-top:6px">
+    <span class="hint">Formato</span>
+    <select id="bits"><option value="24">WAV 24 bit</option><option value="32">WAV 32 bit float</option></select>
+    <button id="dlClean">Scarica pulito</button>
+    <button id="dlRem">Scarica solo tolto</button>
+    <button id="dlBoth">Scarica entrambi</button>
+  </div>
+  <p class="hint" id="dlNote"></p>
+</section>
+
+<section class="panel">
+  <details>
+    <summary>Come funziona</summary>
+    <p>Il Dolby C comprimeva in registrazione ed espandeva in riproduzione: il fruscio, entrato tra le due fasi, veniva abbassato dall'espansione. Sugli stem separati la fase di codifica non c'è, quindi si usa solo l'espansore, come facevano i sistemi "single-ended" (DNR, HUSH).</p>
+    <p><b>Sidechain:</b> lo spettro viene diviso in 27 bande da 1/3 d'ottava. In ogni banda e in ogni istante si confronta il livello dello stem con quello dei riferimenti. Dove il riferimento si avvicina allo stem o lo supera, è probabile che quel pezzo sia rientro e la banda viene abbassata. L'inviluppo segue attacco e rilascio come un compander analogico. Il guadagno è interpolato tra le bande per non creare gradini.</p>
+    <p><b>Espansore:</b> stima il rumore di fondo di ogni banda (15° percentile) e sotto la soglia espande 1:N. Sugli stem moderni, che il separatore ha già "chiuso" nelle pause, fa poco: lo trovi per completezza e per materiale più rumoroso.</p>
+    <p><b>Limiti:</b> toglie il rientro, ma non ripara la voce "acquosa" o metallica che il separatore lascia sul cantato stesso. Funziona meglio se i riferimenti vengono dalla stessa separazione dello stem da pulire.</p>
+  </details>
+</section>
+<footer>MBStudio91 · Piedmont Electronic Sound — StemClean DNR 2.0, motore Rust (WebAssembly) · elaborazione STFT 2048/512, finestra di Hann.</footer>
+</main>
+<div id="toast"></div>
+
+<script src="stemclean-engine.js"></script>
+<script id="wasm" type="application/wasm-base64">__STEMCLEAN_WASM_BASE64__</script>
+<script>
+// Carica il motore Rust: incorporato nella pagina (versione distribuita) o accanto al file (sviluppo).
+const engineReady = (async () => {
+  const b64 = document.getElementById('wasm').textContent.trim();
+  let bytes;
+  if (b64 && !b64.startsWith('__')) {
+    const bin = atob(b64); bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  } else {
+    bytes = await (await fetch('stemclean.wasm')).arrayBuffer();
+  }
+  return StemCleanRust.init(bytes);
+})();
+const STFT = { N: 2048, H: 512 };
+</script>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const PRESETS = {
+  delicato:    { mode: 'sc',  margin: -6, slope: 1.5, cut: 18, thr: 12, ratio: 2, att: 5, rel: 80 },
+  consigliato: { mode: 'sc',  margin: 3,  slope: 1.5, cut: 30, thr: 12, ratio: 2, att: 5, rel: 80 },
+  estremo:     { mode: 'sc',  margin: 12, slope: 2,   cut: 40, thr: 12, ratio: 2, att: 5, rel: 80 },
+  dnr:         { mode: 'exp', margin: 3,  slope: 1.5, cut: 24, thr: 12, ratio: 2, att: 5, rel: 80 },
+};
+const UNITS = { margin: ' dB', slope: '×', cut: ' dB', thr: ' dB', ratio: '', att: ' ms', rel: ' ms' };
+const SLIDERS = Object.keys(UNITS);
+
+let targetFile = null, refFiles = [];
+let ctx = null;
+let cache = null;          // { key, sr, len, session } — l'analisi resta nel motore Rust
+let result = null;         // { cut }
+let bufs = {}, cur = 'clean', src = null, startAt = 0, offset = 0, playing = false, srcId = 0;
+
+const fmtSlider = (id) => {
+  const v = +$('#' + id).value;
+  $('#o_' + id).textContent = id === 'ratio' ? '1:' + v.toFixed(1) : (id === 'slope' ? v.toFixed(1) : (v > 0 && id === 'margin' ? '+' + v : v)) + UNITS[id];
+};
+const setPreset = (name) => {
+  const p = PRESETS[name];
+  $('#mode').value = p.mode;
+  SLIDERS.forEach((id) => { $('#' + id).value = p[id]; fmtSlider(id); });
+  document.querySelectorAll('#presets button').forEach((b) => b.classList.toggle('on', b.dataset.p === name));
+};
+SLIDERS.forEach((id) => $('#' + id).addEventListener('input', () => {
+  fmtSlider(id);
+  document.querySelectorAll('#presets button').forEach((b) => b.classList.remove('on'));
+}));
+$('#mode').addEventListener('change', () => document.querySelectorAll('#presets button').forEach((b) => b.classList.remove('on')));
+document.querySelectorAll('#presets button').forEach((b) => b.addEventListener('click', () => setPreset(b.dataset.p)));
+setPreset('consigliato');
+
+const toast = (msg) => {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 3500);
+};
+engineReady.catch((e) => { console.error(e); $('#engineTag').textContent = 'motore non caricato'; $('#engineTag').classList.add('err'); });
+const setStatus = (msg, frac) => {
+  $('#status').textContent = msg;
+  if (frac !== undefined) $('#bar').style.width = (frac * 100).toFixed(1) + '%';
+};
+const yieldUI = () => new Promise((r) => setTimeout(r, 0));
+
+const refreshFiles = () => {
+  $('#namesT').textContent = targetFile ? targetFile.name : '';
+  $('#namesR').textContent = refFiles.map((f) => f.name).join(' + ');
+  $('#go').disabled = !targetFile;
+  setStatus(targetFile ? (refFiles.length ? 'Pronto.' : 'Pronto (senza riferimento: solo espansore).') : 'Carica lo stem da pulire.');
+};
+const wireDrop = (zone, input, multi) => {
+  const take = (files) => {
+    const list = [...files].filter((f) => f.type.startsWith('audio') || /\.(wav|mp3|flac|m4a|aiff?|ogg)$/i.test(f.name));
+    if (!list.length) return;
+    if (multi) refFiles = list; else targetFile = list[0];
+    refreshFiles();
+  };
+  input.addEventListener('change', () => take(input.files));
+  zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+  zone.addEventListener('drop', (e) => { e.preventDefault(); zone.classList.remove('over'); take(e.dataTransfer.files); });
+};
+wireDrop($('#dropT'), $('#fileT'), false);
+wireDrop($('#dropR'), $('#fileR'), true);
+
+const getCtx = async () => {
+  const sr = +$('#sr').value;
+  if (!ctx || ctx.sampleRate !== sr) {
+    stopPlay();
+    if (ctx) { try { await ctx.close(); } catch (e) { /* già chiuso */ } }
+    ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: sr });
+  }
+  return ctx;
+};
+const decode = async (file) => {
+  const c = await getCtx();
+  const ab = await file.arrayBuffer();
+  return await c.decodeAudioData(ab);
+};
+const chans = (buf) => [buf.getChannelData(0), buf.numberOfChannels > 1 ? buf.getChannelData(1) : buf.getChannelData(0)];
+
+const params = () => {
+  const p = { mode: $('#mode').value };
+  SLIDERS.forEach((id) => { p[id] = +$('#' + id).value; });
+  return p;
+};
+
+$('#go').addEventListener('click', async () => {
+  $('#go').disabled = true;
+  try {
+    await engineReady;
+    const c = await getCtx();
+    const sr = c.sampleRate;
+    const key = [targetFile.name, targetFile.size, ...refFiles.map((f) => f.name + f.size), sr].join('|');
+    if (!cache || cache.key !== key) {
+      if (cache) cache.session.free();
+      cache = null; result = null;
+      setStatus('Decodifica dello stem…', 0);
+      const tb = await decode(targetFile);
+      const [L, R] = chans(tb);
+      const session = new StemCleanRust.Session(sr, L, R);
+      setStatus('Analisi dello stem…', 0.02);
+      await session.analyzeTarget(async (f) => { setStatus('Analisi dello stem…', 0.02 + f * 0.3); await yieldUI(); });
+      for (let i = 0; i < refFiles.length; i++) {
+        setStatus(`Decodifica riferimento ${i + 1}/${refFiles.length}…`, 0.32);
+        const rb = await decode(refFiles[i]);
+        const [a, b] = chans(rb);
+        session.addReference(a, b);
+      }
+      if (refFiles.length) await session.analyzeReference(async (f) => { setStatus('Analisi dei riferimenti…', 0.34 + f * 0.26); await yieldUI(); });
+      cache = { key, sr, len: tb.length, session };
+    }
+    const p = params();
+    const { sr: csr, len, session } = cache;
+    const m = await session.process(p, async (f) => { setStatus('Elaborazione…', 0.6 + f * 0.38); await yieldUI(); });
+    result = { cut: p.cut };
+    $('#m1').textContent = m.removedDb.toFixed(1) + ' dB';
+    $('#m2').textContent = (m.singMean >= 0 ? '+' : '') + m.singMean.toFixed(2) + ' dB';
+    $('#m3').textContent = (m.singWorst >= 0 ? '+' : '') + m.singWorst.toFixed(1) + ' dB';
+    $('#m3').classList.toggle('warn', m.singWorst < -2);
+    $('#m2').classList.toggle('warn', m.singMean < -0.5);
+
+    const mk = (src) => {
+      const buf = c.createBuffer(2, len, csr);
+      buf.copyToChannel(session.channel(src, 0), 0);
+      buf.copyToChannel(session.channel(src, 1), 1);
+      return buf;
+    };
+    const pos = currentPos();
+    const wasPlaying = playing;
+    stopPlay();
+    bufs = { orig: mk('orig'), clean: mk('clean'), rem: mk('rem') };
+    offset = Math.min(pos, len / csr);
+    $('#results').classList.remove('hidden');
+    specCache = {};
+    drawView();
+    const warn = !session.hasReference && p.mode !== 'exp' ? ' Nessun riferimento caricato: ho usato solo l\'espansore.' : '';
+    setStatus('Fatto.' + warn, 1);
+    if (wasPlaying) startPlay();
+    updateTime();
+  } catch (err) {
+    console.error(err);
+    setStatus('Errore: ' + (err && err.message ? err.message : err), 0);
+    toast(StemCleanRust.ready ? 'Non riesco a leggere uno dei file. Prova con WAV o MP3.' : 'Il motore Rust non si è caricato.');
+  } finally {
+    $('#go').disabled = !targetFile;
+  }
+});
+
+// ---- grafico con assi: spettrogramma / riduzione ----
+const AX = { ML: 60, MR: 64, MT: 24, MB: 46 };
+const FMIN = 30;
+let specCache = {}, grid = null;
+const cmap = (palette, v) => StemCleanRust.paletteColor(palette, v);
+const fmtHz = (f) => f >= 1000 ? (f / 1000).toLocaleString('it-IT', { maximumFractionDigits: f >= 10000 ? 1 : 2 }) + ' kHz' : Math.round(f) + ' Hz';
+const tickHz = (f) => f >= 1000 ? (f / 1000) + 'k' : String(f);
+const mmssd = (s) => Math.floor(s / 60) + ':' + (s % 60).toFixed(1).padStart(4, '0');
+const rowFreq = (y, ph, fmax) => FMIN * Math.pow(fmax / FMIN, 1 - (y + 0.5) / ph);
+
+// spettrogramma (dBFS) e mappa della riduzione: li calcola il motore Rust
+const specGrid = (src, pw, ph) => cache.session.spectrogram(src, pw, ph);
+const reductionGrid = (pw, ph) => cache.session.reduction(pw, ph);
+
+const SRC_NAMES = { orig: 'Originale', clean: 'Pulito', rem: 'Solo tolto' };
+const drawView = () => {
+  if (!result || !bufs.orig) return;
+  const view = $('#view').value;
+  $('#rangeWrap').classList.toggle('hidden', view !== 'spec');
+  const cv = $('#cv'), dpr = window.devicePixelRatio || 1;
+  const cssW = cv.clientWidth, cssH = cv.clientHeight;
+  cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr);
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const PW = cssW - AX.ML - AX.MR, PH = cssH - AX.MT - AX.MB;
+  const pw = Math.max(50, Math.round(PW * dpr)), ph = Math.max(50, Math.round(PH * dpr));
+  const fmax = cache.sr / 2, dur = bufs.orig.duration;
+
+  let vals, vmin, vmax, stops, unit;
+  if (view === 'spec') {
+    const key = cur + '|' + pw + '|' + ph;
+    vals = specCache[key] || (specCache[key] = specGrid(cur, pw, ph));
+    vmax = 0; vmin = -(+$('#range').value); stops = 'magma'; unit = 'dBFS';
+    $('#legend').textContent = `Spettrogramma di "${SRC_NAMES[cur]}" (cambia con 1 · 2 · 3). Verticale: frequenza in scala logaritmica · orizzontale: tempo · colore: livello in dBFS (0 = sinusoide a fondo scala).`;
+  } else {
+    vals = reductionGrid(pw, ph);
+    vmax = 0; vmin = -result.cut; stops = 'amber'; unit = 'dB rid.';
+    $('#legend').textContent = 'Riduzione applicata dal processo, banda per banda (1/3 d\'ottava). Scuro = intatto · ambra/rosso = attenuato. Il valore è in dB rispetto all\'originale.';
+  }
+
+  // immagine
+  const img = new ImageData(cache.session.pixels(vals, vmin, vmax, stops), pw, ph);
+  const oc = document.createElement('canvas'); oc.width = pw; oc.height = ph;
+  oc.getContext('2d').putImageData(img, 0, 0);
+  g.fillStyle = '#14110e'; g.fillRect(0, 0, cssW, cssH);
+  g.imageSmoothingEnabled = false;
+  g.drawImage(oc, AX.ML, AX.MT, PW, PH);
+
+  g.font = '11px system-ui,-apple-system,sans-serif';
+  g.textBaseline = 'middle';
+  const yOf = (f) => AX.MT + PH * (1 - Math.log(f / FMIN) / Math.log(fmax / FMIN));
+
+  // griglia frequenze: linee fini a 1..9 per decade, marcate a 1-2-5
+  for (const dec of [10, 100, 1000, 10000]) {
+    for (let m = 1; m <= 9; m++) {
+      const f = dec * m;
+      if (f < FMIN || f > fmax) continue;
+      const major = m === 1 || m === 2 || m === 5;
+      const y = Math.round(yOf(f)) + 0.5;
+      g.strokeStyle = major ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.09)';
+      g.lineWidth = 1;
+      g.beginPath(); g.moveTo(AX.ML, y); g.lineTo(AX.ML + PW, y); g.stroke();
+      if (major) {
+        g.fillStyle = '#a3988a'; g.textAlign = 'right';
+        g.fillText(tickHz(f), AX.ML - 8, y);
+        g.strokeStyle = '#6b6156'; g.beginPath(); g.moveTo(AX.ML - 5, y); g.lineTo(AX.ML, y); g.stroke();
+      }
+    }
+  }
+  // griglia tempo
+  const step = [1, 2, 5, 10, 15, 20, 30, 60, 120, 300, 600].find((s) => dur / s <= 10) || 600;
+  g.textAlign = 'center'; g.textBaseline = 'top';
+  for (let t = 0; t <= dur + 1e-6; t += step) {
+    const x = Math.round(AX.ML + PW * t / dur) + 0.5;
+    g.strokeStyle = 'rgba(255,255,255,0.18)';
+    g.beginPath(); g.moveTo(x, AX.MT); g.lineTo(x, AX.MT + PH); g.stroke();
+    g.strokeStyle = '#6b6156'; g.beginPath(); g.moveTo(x, AX.MT + PH); g.lineTo(x, AX.MT + PH + 5); g.stroke();
+    g.fillStyle = '#a3988a'; g.fillText(mmss(t), x, AX.MT + PH + 8);
+  }
+  // titoli assi e cornice
+  g.fillStyle = '#efe7dc'; g.textAlign = 'left'; g.textBaseline = 'top';
+  g.save(); g.translate(12, AX.MT + PH / 2); g.rotate(-Math.PI / 2); g.textAlign = 'center'; g.fillText('frequenza (Hz)', 0, 0); g.restore();
+  g.textAlign = 'center'; g.fillText('tempo (m:ss)', AX.ML + PW / 2, AX.MT + PH + 26);
+  g.strokeStyle = '#4a4239'; g.strokeRect(AX.ML + 0.5, AX.MT + 0.5, PW, PH);
+
+  // barra colori con scala in dB
+  const bx = AX.ML + PW + 14, bw = 12;
+  for (let i = 0; i < PH; i++) {
+    const c = cmap(stops, 1 - i / PH);
+    g.fillStyle = `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
+    g.fillRect(bx, AX.MT + i, bw, 1.5);
+  }
+  g.strokeStyle = '#4a4239'; g.strokeRect(bx + 0.5, AX.MT + 0.5, bw, PH);
+  const span = vmax - vmin;
+  const dstep = span <= 24 ? 3 : span <= 48 ? 6 : span <= 60 ? 10 : 20;
+  g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillStyle = '#a3988a';
+  for (let v = vmax; v >= vmin - 1e-6; v -= dstep) {
+    const y = Math.round(AX.MT + PH * (vmax - v) / span) + 0.5;
+    g.strokeStyle = '#6b6156'; g.beginPath(); g.moveTo(bx + bw, y); g.lineTo(bx + bw + 4, y); g.stroke();
+    g.fillText(String(v), bx + bw + 7, y);
+  }
+  g.textBaseline = 'bottom'; g.textAlign = 'left'; g.fillStyle = '#efe7dc'; g.fillText(unit, bx - 2, AX.MT - 6);
+
+  grid = { vals, pw, ph, PW, PH, fmax, dur, unit, view };
+  const phEl = $('#ph'); phEl.style.top = AX.MT + 'px'; phEl.style.height = PH + 'px';
+  updateTime();
+};
+window.addEventListener('resize', () => { clearTimeout(drawView.h); drawView.h = setTimeout(drawView, 150); });
+$('#view').addEventListener('change', drawView);
+$('#range').addEventListener('change', drawView);
+
+const plotPos = (e) => {
+  const r = $('#cv').getBoundingClientRect();
+  return { x: e.clientX - r.left - AX.ML, y: e.clientY - r.top - AX.MT };
+};
+$('#heat').addEventListener('mousemove', (e) => {
+  if (!grid) return;
+  const { x, y } = plotPos(e);
+  const inside = x >= 0 && y >= 0 && x <= grid.PW && y <= grid.PH;
+  $('#chx').style.display = $('#chy').style.display = inside ? 'block' : 'none';
+  if (!inside) return;
+  const t = x / grid.PW * grid.dur;
+  const f = FMIN * Math.pow(grid.fmax / FMIN, 1 - y / grid.PH);
+  const ix = Math.min(grid.pw - 1, Math.floor(x / grid.PW * grid.pw)), iy = Math.min(grid.ph - 1, Math.floor(y / grid.PH * grid.ph));
+  const v = grid.vals[iy * grid.pw + ix];
+  const vtxt = grid.view === 'spec' ? `livello ${v < -150 ? '−∞' : v.toFixed(1)} dBFS` : `riduzione ${v.toFixed(1)} dB`;
+  $('#readout').textContent = `tempo ${mmssd(t)} · frequenza ${fmtHz(f)} · ${vtxt}`;
+  const cx = $('#chx'), cy = $('#chy');
+  cx.style.left = (AX.ML + x) + 'px'; cx.style.top = AX.MT + 'px'; cx.style.height = grid.PH + 'px';
+  cy.style.top = (AX.MT + y) + 'px'; cy.style.left = AX.ML + 'px'; cy.style.width = grid.PW + 'px';
+});
+$('#heat').addEventListener('mouseleave', () => { $('#chx').style.display = $('#chy').style.display = 'none'; });
+
+// ---- player A/B ----
+const duration = () => (bufs.orig ? bufs.orig.duration : 0);
+const currentPos = () => {
+  if (!playing || !ctx) return offset;
+  const d = duration();
+  const p = ctx.currentTime - startAt;
+  return $('#loop').checked ? p % d : Math.min(p, d);
+};
+const stopPlay = () => {
+  if (src) { srcId++; try { src.stop(); } catch (e) { /* già fermo */ } src.disconnect(); src = null; }
+  if (playing) offset = currentPos();
+  playing = false;
+  $('#play').textContent = '▶ Play';
+};
+const startPlay = () => {
+  if (!bufs[cur]) return;
+  if (ctx.state === 'suspended') ctx.resume();
+  if (offset >= duration() - 0.01) offset = 0;
+  src = ctx.createBufferSource();
+  src.buffer = bufs[cur];
+  src.loop = $('#loop').checked;
+  src.connect(ctx.destination);
+  const id = ++srcId;
+  src.onended = () => { if (id === srcId) { playing = false; offset = 0; src = null; $('#play').textContent = '▶ Play'; } };
+  src.start(0, offset);
+  startAt = ctx.currentTime - offset;
+  playing = true;
+  $('#play').textContent = '❚❚ Pausa';
+};
+const togglePlay = () => { if (playing) stopPlay(); else startPlay(); };
+const selectSrc = (name) => {
+  const pos = currentPos(), was = playing;
+  stopPlay(); offset = pos; cur = name;
+  document.querySelectorAll('.ab button[data-src]').forEach((b) => b.classList.toggle('on', b.dataset.src === name));
+  if (was) startPlay();
+  if ($('#view').value === 'spec') drawView();
+};
+$('#play').addEventListener('click', togglePlay);
+document.querySelectorAll('.ab button[data-src]').forEach((b) => b.addEventListener('click', () => selectSrc(b.dataset.src)));
+$('#loop').addEventListener('change', () => { if (src) src.loop = $('#loop').checked; });
+$('#heat').addEventListener('click', (e) => {
+  if (!bufs.orig) return;
+  if (!grid) return;
+  const { x } = plotPos(e);
+  if (x < 0 || x > grid.PW) return;
+  const was = playing; stopPlay();
+  offset = (x / grid.PW) * duration();
+  if (was) startPlay(); else updateTime();
+});
+document.addEventListener('keydown', (e) => {
+  if (!bufs.orig || e.target.closest('input,select,textarea')) return;
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  if (e.key === '1') selectSrc('orig');
+  if (e.key === '2') selectSrc('clean');
+  if (e.key === '3') selectSrc('rem');
+});
+const mmss = (s) => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+const updateTime = () => {
+  const d = duration(), p = currentPos();
+  $('#time').textContent = mmss(p) + ' / ' + mmss(d);
+  const PW = grid ? grid.PW : 0;
+  $('#ph').style.left = (AX.ML + (d ? (p / d) * PW : 0)) + 'px';
+};
+const tick = () => { if (playing) updateTime(); requestAnimationFrame(tick); };
+requestAnimationFrame(tick);
+
+// ---- esportazione ----
+// Salvataggio nativo quando la pagina gira dentro l'app Mac (Tauri).
+const tauri = window.__TAURI__ && window.__TAURI__.core;
+const saveNative = (name, bytes) => tauri.invoke('salva_file', bytes, { headers: { 'x-nome': encodeURIComponent(name) } });
+
+const hasHost = !!(window.claude && typeof window.claude.use === 'function');
+const dlPromise = hasHost ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
+$('#dlNote').textContent = hasHost
+  ? 'Qui i WAV arrivano dentro un file .zip (non compresso): estrailo e trovi il WAV identico.'
+  : tauri ? 'Per ogni file ti chiedo dove salvarlo.' : 'I file vengono salvati come WAV nella cartella dei download.';
+
+const baseName = () => (targetFile ? targetFile.name.replace(/\.[^.]+$/, '') : 'stem');
+const doExport = async (which) => {
+  if (!result || !cache) return;
+  const bits = +$('#bits').value, session = cache.session;
+  const items = [];
+  if (which !== 'rem') items.push({ name: baseName() + '_pulito.wav', src: 'clean' });
+  if (which !== 'clean') items.push({ name: baseName() + '_tolto.wav', src: 'rem' });
+  toast('Preparo il file…');
+  await yieldUI();
+  if (hasHost) {
+    const dl = await dlPromise;
+    if (!dl) { toast('In questa vista il download non è disponibile. Apri la pagina su claude.ai.'); return; }
+    const zipName = which === 'both' ? baseName() + '_stemclean.zip' : items[0].name.replace(/\.wav$/, '.zip');
+    try {
+      await dl.save({ filename: zipName, data: new Blob([session.zip(items, bits)], { type: 'application/zip' }) });
+      toast('Salvato.');
+    } catch (e) {
+      const code = e && e.code;
+      toast(code === 'declined' ? 'Download annullato.' : code === 'rate_limited' ? 'Un download è già in attesa: riprova tra poco.' : 'Download non riuscito: ' + (e && e.message ? e.message : code));
+    }
+    return;
+  }
+  for (const it of items) {
+    const data = session.wav(it.src, bits);
+    if (tauri) {
+      try {
+        const saved = await saveNative(it.name, data);
+        toast(saved ? 'Salvato: ' + it.name : 'Salvataggio annullato.');
+      } catch (e) { toast('Salvataggio non riuscito: ' + e); }
+      continue;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data], { type: 'audio/wav' }));
+    a.download = it.name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
+    await new Promise((r) => setTimeout(r, 400));
+  }
+};
+$('#dlClean').addEventListener('click', () => doExport('clean'));
+$('#dlRem').addEventListener('click', () => doExport('rem'));
+$('#dlBoth').addEventListener('click', () => doExport('both'));
+$('#sr').addEventListener('change', () => { if (cache) cache.session.free(); cache = null; result = null; });
+</script>
+</body>
+</html>

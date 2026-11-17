@@ -1,0 +1,36 @@
+name: App Mac (universale)
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Rust con i target necessari
+        run: rustup target add wasm32-unknown-unknown aarch64-apple-darwin x86_64-apple-darwin
+      - name: Test del motore
+        run: cargo test --release -p stemclean-core
+      - name: Pagina con motore WebAssembly
+        run: ./scripts/build-web.sh
+      - name: App Tauri universale (Intel + Apple Silicon)
+        working-directory: src-tauri
+        run: npx --yes @tauri-apps/cli@2 build --target universal-apple-darwin
+      - name: Programma da Terminale universale
+        run: |
+          cargo build --release -p stemclean-cli --target aarch64-apple-darwin
+          cargo build --release -p stemclean-cli --target x86_64-apple-darwin
+          lipo -create -output stemclean target/aarch64-apple-darwin/release/stemclean target/x86_64-apple-darwin/release/stemclean
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StemClean-DNR-Mac
+          path: |
+            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            stemclean
+            dist/index.html
