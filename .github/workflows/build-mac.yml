@@ -7,7 +7,8 @@ on:
 
 jobs:
   mac:
-    runs-on: macos-latest
+    # Runner Intel: quelli Apple Silicon hanno code lunghe; la build "universal" crea comunque anche la parte arm64.
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
