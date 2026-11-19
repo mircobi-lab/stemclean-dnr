@@ -67,3 +67,8 @@ Crea `voce_pulito.wav` e `voce_tolto.wav`. Accetta WAV a 8, 16, 24 o 32 bit inte
 - `python3 scripts/browser-test.py dist/index.html stem.wav rif.wav` prova la pagina in Chrome senza interfaccia: carica i file, elabora, disegna il grafico e scarica i WAV.
 
 MBStudio91 · Piedmont Electronic Sound
+
+
+## Aspetto
+
+Interfaccia nello stile hardware MBStudio: telaio nero, scritte bianche stampate, LED, tasti in gomma. Font Bebas Neue (© Dharma Type) e Antonio (© Vernon Adams) incorporati nella pagina, SIL Open Font License 1.1, quindi funziona anche senza internet. Logo MBSTUDIO91: marchio di MBStudio91.
