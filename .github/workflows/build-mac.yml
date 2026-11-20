@@ -1,9 +1,15 @@
 name: App Mac (universale)
 
+# Compila a ogni aggiornamento di main e pubblica l'app pronta nella pagina Releases.
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     tags: ["v*"]
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   mac:
@@ -35,3 +41,36 @@ jobs:
             src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
             stemclean
             dist/index.html
+
+  release:
+    name: Pubblica in Releases
+    if: github.ref == 'refs/heads/main'
+    needs: [mac]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: StemClean-DNR-Mac
+          path: dist
+      - name: Prepara i file
+        run: |
+          cd dist
+          mkdir -p out
+          find . -name '*.dmg' -exec cp {} out/StemClean-DNR-mac.dmg \;
+          chmod +x stemclean && zip -j out/stemclean-terminale-mac.zip stemclean
+          cp dist/index.html out/StemClean-DNR-web.html 2>/dev/null || cp index.html out/StemClean-DNR-web.html
+          ls -la out
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.0.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          name: StemClean DNR 2.0.${{ github.run_number }}
+          body: |
+            Compilato automaticamente da GitHub dal commit ${{ github.sha }}.
+            - StemClean-DNR-mac.dmg: app per Mac (Apple Silicon e Intel). Al primo avvio: clic destro > Apri.
+            - stemclean-terminale-mac.zip: versione da Terminale.
+            - StemClean-DNR-web.html: versione nel browser (motore WebAssembly).
+          files: dist/out/*
